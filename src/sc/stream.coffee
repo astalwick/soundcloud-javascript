@@ -35,6 +35,12 @@ window.SC = SC.Helper.merge SC || {},
     preparedUrl = SC.prepareRequestURI(url)
     preparedUrl.toString()
 
+  _prepareMp3StreamUrl: (idOrUrl) ->
+    url = if @_isNumeric(idOrUrl) then "/tracks/#{idOrUrl}/stream" else idOrUrl
+    preparedUrl = SC.prepareRequestURI(url)
+    preparedUrl.path += "/stream" if !preparedUrl.path.match(/\/stream/)
+    preparedUrl.toString()    
+
   _prepareStreamUrl: (idOrUrl) ->
     url = if @_isNumeric(idOrUrl) then "/tracks/#{idOrUrl}" else idOrUrl
     preparedUrl = SC.prepareRequestURI(url)
@@ -59,12 +65,18 @@ window.SC = SC.Helper.merge SC || {},
     options.id = "T" + idOrUrl + "-" + Math.random()
     track_url = @_prepareTrackUrl(idOrUrl)
     stream_url = @_prepareStreamUrl(idOrUrl)
+    mp3_stream_url = @_prepareMp3StreamUrl(idOrUrl)
+    
 
     SC.whenStreamingReady ->
       SC.get track_url, (track) ->
         options.duration = track.duration
         SC.get stream_url, (streams) ->
-          options.src = streams.http_mp3_128_url || streams.rtmp_mp3_128_url
+          if streams.http_mp3_128_url?
+            options.src = mp3_stream_url
+            options.mimeType = "audio/mpeg"
+          else
+            options.src = streams.rtmp_mp3_128_url
 
           createAndCallback = (options) =>
             player = new Player(audioManager.createAudioPlayer(options))
